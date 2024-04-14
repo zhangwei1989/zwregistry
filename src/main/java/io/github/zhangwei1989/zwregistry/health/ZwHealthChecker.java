@@ -43,7 +43,7 @@ public class ZwHealthChecker implements HealthChecker {
                     registryService.unregister(service, instance);
                     ZwRegistryService.TIMESTAMPS.remove(serviceAndInstance);
                 }
-            }
+            });
         }, 10, 30, java.util.concurrent.TimeUnit.SECONDS);
     }
 
