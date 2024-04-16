@@ -47,7 +47,6 @@ public class InstanceMeta {
                 uri.getHost(),
                 String.valueOf(uri.getPort()),
                 uri.getPath().substring(1));
-
     }
 
     public String toPath() {
