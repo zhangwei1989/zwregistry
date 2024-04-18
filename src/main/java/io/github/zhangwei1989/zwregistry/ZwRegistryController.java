@@ -1,5 +1,7 @@
 package io.github.zhangwei1989.zwregistry;
 
+import io.github.zhangwei1989.zwregistry.cluster.Cluster;
+import io.github.zhangwei1989.zwregistry.cluster.Server;
 import io.github.zhangwei1989.zwregistry.model.InstanceMeta;
 import io.github.zhangwei1989.zwregistry.service.RegistryService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,9 @@ public class ZwRegistryController {
 
     @Autowired
     RegistryService registryService;
+
+    @Autowired
+    Cluster cluster;
 
     @RequestMapping("/reg")
     public InstanceMeta register(@RequestParam String service, @RequestBody InstanceMeta instance) {
@@ -65,6 +70,31 @@ public class ZwRegistryController {
     public Map<String, Long> versions(@RequestParam String services) {
         log.info(" ======> versions for services {}", services);
         return registryService.versions(services.split(","));
+    }
+
+    @RequestMapping("/info")
+    public Server info() {
+        log.info(" ======> info : {}", cluster.self());
+        return cluster.self();
+    }
+
+    @RequestMapping("/cluster")
+    public List<Server> cluster() {
+        log.info(" ======> info : {}", cluster.getServers());
+        return cluster.getServers();
+    }
+
+    @RequestMapping("/leader")
+    public Server leader() {
+        log.info(" ======> leader : {}", cluster.leader());
+        return cluster.leader();
+    }
+
+    @RequestMapping("/sl")
+    public Server sl() {
+        cluster.self().setLeader(true);
+        log.info(" ======> set leader : {}", cluster.leader());
+        return cluster.leader();
     }
 
 }

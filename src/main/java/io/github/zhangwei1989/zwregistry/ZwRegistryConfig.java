@@ -1,5 +1,6 @@
 package io.github.zhangwei1989.zwregistry;
 
+import io.github.zhangwei1989.zwregistry.cluster.Cluster;
 import io.github.zhangwei1989.zwregistry.health.HealthChecker;
 import io.github.zhangwei1989.zwregistry.health.ZwHealthChecker;
 import io.github.zhangwei1989.zwregistry.service.RegistryService;
@@ -25,6 +26,11 @@ public class ZwRegistryConfig {
     @Bean(initMethod = "start", destroyMethod = "stop")
     public HealthChecker healthChecker(@Autowired RegistryService registryService) {
         return new ZwHealthChecker(registryService);
+    }
+
+    @Bean(initMethod = "init")
+    public Cluster cluster(@Autowired ZwRegistryConfigProperties registryConfigProperties) {
+        return new Cluster(registryConfigProperties);
     }
 
 }

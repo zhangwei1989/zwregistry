@@ -8,7 +8,7 @@ Content-Type: application/json
 {
   "context": "wmrpc",
   "host": "localhost",
-  "port": "8081",
+  "port": "8083",
   "schema": "http",
   "status": false,
   "parameters": {
@@ -27,3 +27,26 @@ Content-Type: application/json
   "port": "8082",
   "schema": "http"
 }
+
+### renew一个实例8081
+POST  http://localhost:8484/renew?service=io.github.william.wmrpc.Userservice
+Content-Type: application/json
+
+{
+  "context": "wmrpc",
+  "host": "localhost",
+  "port": "8082",
+  "schema": "http"
+}
+
+### version
+GET  http://localhost:8484/version?service=io.github.william.wmrpc.Userservice
+
+### 获取当前服务信息
+GET http://localhost:8484/info
+
+### 获取当前服务信息
+GET http://localhost:8484/cluster
+
+### 设置 85 为leader
+GET http://localhost:8485/sl
