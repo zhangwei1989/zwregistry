@@ -27,3 +27,9 @@ Content-Type: application/json
   "port": "8082",
   "schema": "http"
 }
+
+### 获取8484服务实例状态
+GET http://localhost:8484/health
+
+### 获取8484所有服务实例状态
+GET http://localhost:8484/cluster
