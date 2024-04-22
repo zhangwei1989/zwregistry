@@ -4,16 +4,15 @@ import io.github.zhangwei1989.zwregistry.client.http.HttpInvoker;
 import io.github.zhangwei1989.zwregistry.config.ZwregistryConfigProperties;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.commons.util.InetUtils;
+import org.springframework.cloud.commons.util.InetUtilsProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.commons.util.InetUtils;
-import org.springframework.cloud.commons.util.InetUtilsProperties;
 
 /**
  * 注册中心集群
@@ -55,7 +54,11 @@ public class Cluster {
                 serverUrl = serverUrl.replace("127.0.0.1", host);
             }
             Server server = new Server(serverUrl, false, false, -1L);
-            servers.add(server);
+            if (MYSELF.equals(server)) {
+                servers.add(MYSELF);
+            } else {
+                servers.add(server);
+            }
         });
 
         // 启动定时任务
@@ -89,6 +92,44 @@ public class Cluster {
     }
 
     private void electLeader() {
+        // 所有节点执行相同的选主逻辑，选出来的都是同一个主
+        List<Server> masters = servers.stream()
+                .filter(Server::isStatus)
+                .filter(Server::isLeader)
+                .toList();
+        // 如果主节点大于 1 个，需要重新选主
+        if (masters.size() > 1) {
+            log.debug("more than one leader server, need to re-elect: {}", masters);
+            doElect();
+        } else if (masters.size() == 0) { // 如果没有主节点，也需要选主
+            log.debug("no leader server, need to elect: {}", masters);
+            doElect();
+        } else { // 其余情况不需要选主
+            log.debug("no  need for elect, current leader is : {}", masters);
+        }
+    }
+
+    private void doElect() {
+        List<Server> candidates = servers.stream()
+                .filter(Server::isStatus)
+                .toList();
+        Server candidate = null;
+        for (Server server : candidates) {
+            server.setLeader(false);
+            if (candidate == null) {
+                candidate = server;
+                continue;
+            }
+
+            if (candidate.hashCode() > server.hashCode()) {
+                candidate = server;
+            }
+        }
+
+        if (candidate != null) {
+            log.debug("elected leader is {}", candidate);
+            candidate.setLeader(true);
+        }
     }
 
     public Server self() {
