@@ -1,8 +1,11 @@
-### 获取所有服务实例
-GET http://localhost:8484/findAll?service=io.github.william.wmrpc.Userservice
+### 获取 84 所有服务实例
+GET http://localhost:8485/findAll?service=io.github.william.wmrpc.Userservice
+
+### 获取 85 所有服务实例
+GET http://localhost:8485/findAll?service=io.github.william.wmrpc.Userservice
 
 ### 注册一个实例
-POST  http://localhost:8484/reg?service=io.github.william.wmrpc.Userservice
+POST  http://localhost:8485/reg?service=io.github.william.wmrpc.Userservice
 Content-Type: application/json
 
 {
@@ -47,6 +50,9 @@ GET http://localhost:8484/info
 
 ### 获取当前服务信息
 GET http://localhost:8484/cluster
+
+### 查询 8484 的 snapshot
+GET http://localhost:8484/snapshot
 
 ### 设置 85 为leader
 GET http://localhost:8485/sl

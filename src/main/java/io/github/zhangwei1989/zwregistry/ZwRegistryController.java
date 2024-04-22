@@ -2,8 +2,10 @@ package io.github.zhangwei1989.zwregistry;
 
 import io.github.zhangwei1989.zwregistry.cluster.Cluster;
 import io.github.zhangwei1989.zwregistry.cluster.Server;
+import io.github.zhangwei1989.zwregistry.cluster.Snapshot;
 import io.github.zhangwei1989.zwregistry.model.InstanceMeta;
 import io.github.zhangwei1989.zwregistry.service.RegistryService;
+import io.github.zhangwei1989.zwregistry.service.ZwRegistryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,12 +34,14 @@ public class ZwRegistryController {
 
     @RequestMapping("/reg")
     public InstanceMeta register(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> register service {} with instance {}", service, instance);
         return registryService.register(service, instance);
     }
 
     @RequestMapping("/unreg")
     public InstanceMeta unreg(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> unregister service {} with instance {}", service, instance);
         return registryService.unregister(service, instance);
     }
@@ -50,12 +54,14 @@ public class ZwRegistryController {
 
     @RequestMapping("/renew")
     public long renew(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> renew service {} with instance {}", service, instance);
         return registryService.renew(instance, service);
     }
 
     @RequestMapping("/renews")
     public long renews(@RequestParam String services, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> renew service {} with instance {}", services, instance);
         return registryService.renew(instance, services.split(","));
     }
@@ -95,6 +101,18 @@ public class ZwRegistryController {
         cluster.self().setLeader(true);
         log.info(" ======> set leader : {}", cluster.leader());
         return cluster.leader();
+    }
+
+    @RequestMapping("/snapshot")
+    public Snapshot snapshot() {
+        Snapshot snapshot = ZwRegistryService.snapshot();
+        log.info(" ======> snapshot : {}", snapshot);
+        return snapshot;
+    }
+    private void checkLeader() {
+        if (!cluster.self().isLeader()) {
+            throw new RuntimeException("current server is not a leader, the leader is {}" + cluster.leader());
+        }
     }
 
 }

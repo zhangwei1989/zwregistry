@@ -1,7 +1,7 @@
 package io.github.zhangwei1989.zwregistry.cluster;
 
 import io.github.zhangwei1989.zwregistry.ZwRegistryConfigProperties;
-import io.github.zhangwei1989.zwregistry.http.HttpInvoker;
+import io.github.zhangwei1989.zwregistry.service.ZwRegistryService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +10,6 @@ import org.springframework.cloud.commons.util.InetUtilsProperties;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Registry cluster.
@@ -31,20 +27,21 @@ public class Cluster {
     @Value("${server.port}")
     String port;
 
-    Server MYSELF;
+    private Server MYSELF;
 
     @Getter
-    List<Server> servers;
-
-    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-
-    long timeout = 5_000;
+    private List<Server> servers;
 
     public Cluster(ZwRegistryConfigProperties registryConfigProperties) {
         this.registryConfigProperties = registryConfigProperties;
     }
 
     public void init() {
+        initServers();
+        new ServerHealth(this).checkServerHealth();
+    }
+
+    private void initServers() {
         host = new InetUtils(new InetUtilsProperties()).findFirstNonLoopbackHostInfo().getIpAddress();
         log.debug(" ======> findFirstNonLoopbackHostInfo host : {}", host);
         MYSELF = new Server("http://" + host + ":" + port, true, false, -1L);
@@ -71,77 +68,10 @@ public class Cluster {
         }
 
         this.servers = servers;
-
-        executorService.scheduleWithFixedDelay(() -> {
-            updateServers();
-            electLeader();
-        }, 0, timeout, TimeUnit.MILLISECONDS);
-    }
-
-    private void updateServers() {
-        servers.forEach(server -> {
-            try {
-                Server serverInfo = HttpInvoker.httpGet(server.getUrl() + "/info", Server.class);
-                log.debug(" ======> health check success for : {}", serverInfo);
-                if (serverInfo != null) {
-                    server.setStatus(true);
-                    server.setLeader(serverInfo.isLeader());
-                    server.setVersion(serverInfo.getVersion());
-                } else {
-                    server.setStatus(false);
-                    server.setLeader(false);
-                }
-            } catch (Exception exception) {
-                log.debug(" ======> health check failed for : {}", server);
-                server.setStatus(false);
-                server.setLeader(false);
-            }
-        });
-    }
-
-    private void electLeader() {
-        List<Server> masters = this.servers.stream()
-                .filter(Server::isStatus)
-                .filter(Server::isLeader)
-                .collect(Collectors.toList());
-        if (masters.isEmpty()) {
-            log.debug(" ======> no master, need to elect : {}", servers);
-            elect();
-        } else if (masters.size() > 1) {
-            log.debug(" ======> more than one master, need to re-elect : {}", servers);
-            elect();
-        } else {
-            log.debug(" ======> no need election for leader : {}", masters.get(0));
-        }
-    }
-
-    private void elect() {
-        // 1. 各个节点自己选，算法保证大家选的是同一个
-        // 2. 外部有一个分布式锁，谁拿到锁，谁是主
-        // 3. 分布式一致性算法，比如paxos,raft...
-        Server candidate = null;
-        for (Server server : servers) {
-            server.setLeader(false);
-            if (server.isStatus()) {
-                if (candidate == null) {
-                    candidate = server;
-                } else {
-                    if (server.hashCode() < candidate.hashCode()) {
-                        candidate = server;
-                    }
-                }
-            }
-        }
-
-        if (candidate != null) {
-            candidate.setLeader(true);
-            log.debug(" ======> elected leader : {}", candidate);
-        } else {
-            log.debug(" ======> no leader elected");
-        }
     }
 
     public Server self() {
+        MYSELF.setVersion(ZwRegistryService.VERSION.get());
         return MYSELF;
     }
 
