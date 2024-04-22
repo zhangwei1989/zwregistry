@@ -2,8 +2,11 @@ package io.github.zhangwei1989.zwregistry.cluster;
 
 import io.github.zhangwei1989.zwregistry.client.http.HttpInvoker;
 import io.github.zhangwei1989.zwregistry.config.ZwregistryConfigProperties;
+import io.github.zhangwei1989.zwregistry.service.RegistryService;
+import io.github.zhangwei1989.zwregistry.service.ZwRegistryService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.commons.util.InetUtils;
 import org.springframework.cloud.commons.util.InetUtilsProperties;
@@ -22,6 +25,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class Cluster {
+
+    @Autowired
+    private RegistryService registryService;
 
     ZwregistryConfigProperties registryConfigProperties;
 
@@ -67,15 +73,27 @@ public class Cluster {
             updateServers();
             // 定时选主
             electLeader();
+            // 同步主节点注册数据
+            syncFromLeader();
         }, 0, 5, TimeUnit.SECONDS);
+    }
 
+    private void syncFromLeader() {
+        if (!self().isLeader() && self().getVersion() < leader().getVersion()) {
+            log.debug(" ======> leader version is {}, current server version is {}",
+                    leader().getVersion(), self().getVersion());
+            log.debug(" ======> sync snapshot from leader start......");
+            Snapshot snapshot = HttpInvoker.httpGet(leader().getUrl() + "/snapshot", Snapshot.class);
+            registryService.restore(snapshot);
+            log.debug(" ======> sync snapshot from leader success");
+        }
     }
 
     private void updateServers() {
         // 请求每个实例的 /health 接口，更新实例的状态
         servers.forEach(server -> {
             try {
-                Server instance = (Server) HttpInvoker.httpGet(server.getUrl() + "/health", Server.class);
+                Server instance = HttpInvoker.httpGet(server.getUrl() + "/health", Server.class);
                 if (instance != null) {
                     server.setStatus(true);
                     server.setLeader(instance.isLeader());
@@ -133,7 +151,15 @@ public class Cluster {
     }
 
     public Server self() {
+        MYSELF.setVersion(ZwRegistryService.VERSION.get());
         return MYSELF;
+    }
+
+    public Server leader() {
+        return this.getServers().stream()
+                .filter(Server::isLeader)
+                .findFirst()
+                .orElse(null);
     }
 
 }

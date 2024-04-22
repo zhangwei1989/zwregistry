@@ -20,14 +20,14 @@ public interface HttpInvoker {
 
     public String get(String url);
 
-    static Object httpGet(String url, Class<?> clazz) {
+    static <T> T httpGet(String url, Class<T> clazz) {
         log.debug("httpGet, url ======> {}", url);
         String respJson = DEFAULT.get(url);
         log.debug("httpGet, url, respJson ======> {}, {}", url, respJson);
         return JSON.parseObject(respJson, clazz);
     }
 
-    static Object httpPost(String requestBody, String url, Class<?> clazz) {
+    static <T> T httpPost(String requestBody, String url, Class<T> clazz) {
         log.debug("httpPost, url, requestBody ======> {}, {}", url, requestBody);
         String respJson = DEFAULT.post(requestBody, url);
         log.debug("httpPost, url, requestBody, respJson ======> {}, {}, {}", url, requestBody, respJson);

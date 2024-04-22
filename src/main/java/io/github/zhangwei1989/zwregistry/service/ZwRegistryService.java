@@ -1,11 +1,13 @@
 package io.github.zhangwei1989.zwregistry.service;
 
+import io.github.zhangwei1989.zwregistry.cluster.Snapshot;
 import io.github.zhangwei1989.zwregistry.model.InstanceMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,10 +29,10 @@ public class ZwRegistryService implements RegistryService {
 
     public final static Map<String, Long> TIMESTAMPS = new ConcurrentHashMap<>();
 
-    final static AtomicLong VERSION = new AtomicLong(0);
+    public final static AtomicLong VERSION = new AtomicLong(0);
 
     @Override
-    public InstanceMeta register(String service, InstanceMeta instance) {
+    public synchronized InstanceMeta register(String service, InstanceMeta instance) {
         List<InstanceMeta> instanceMetas = REGISTRY.get(service);
         if (instanceMetas != null && !instanceMetas.isEmpty()) {
             if (instanceMetas.contains(instance)) {
@@ -49,7 +51,7 @@ public class ZwRegistryService implements RegistryService {
     }
 
     @Override
-    public InstanceMeta unregister(String service, InstanceMeta instance) {
+    public synchronized InstanceMeta unregister(String service, InstanceMeta instance) {
         List<InstanceMeta> instanceMetas = REGISTRY.get(service);
         if (instanceMetas == null || instanceMetas.isEmpty()) {
             return null;
@@ -68,7 +70,7 @@ public class ZwRegistryService implements RegistryService {
         return REGISTRY.get(serviceName);
     }
 
-    public long renew(InstanceMeta instance, String... services) {
+    public synchronized long renew(InstanceMeta instance, String... services) {
         long now = System.currentTimeMillis();
         for (String service : services) {
             TIMESTAMPS.put(service + "@" + instance.toUrl(), now);
@@ -83,5 +85,31 @@ public class ZwRegistryService implements RegistryService {
 
     public Map<String, Long> versions(String... services) {
         return Arrays.stream(services).collect(Collectors.toMap(x -> x, x -> VERSIONS.get(x), (a, b) -> b));
+    }
+
+    @Override
+    public synchronized Snapshot snapshot() {
+        LinkedMultiValueMap<String, InstanceMeta> REGISTRY = new LinkedMultiValueMap<>();
+        REGISTRY.putAll(this.REGISTRY);
+        Map<String, Long> VERSIONS = new HashMap<>();
+        VERSIONS.putAll(this.VERSIONS);
+        Map<String, Long> TIMESTAMPS = new HashMap<>();
+        TIMESTAMPS.putAll(this.TIMESTAMPS);
+        long VERSION = this.VERSION.get();
+
+        return new Snapshot(REGISTRY, VERSIONS, TIMESTAMPS, VERSION);
+    }
+
+    @Override
+    public synchronized long restore(Snapshot snapshot) {
+        REGISTRY.clear();
+        REGISTRY.putAll(snapshot.getREGISTRY());
+        VERSIONS.clear();
+        VERSIONS.putAll(snapshot.getVERSIONS());
+        TIMESTAMPS.clear();
+        TIMESTAMPS.putAll(snapshot.getTIMESTAMPS());
+        VERSION.set(snapshot.getVERSION());
+
+        return snapshot.getVERSION();
     }
 }
