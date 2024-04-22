@@ -68,7 +68,6 @@ public class Cluster {
             // 定时选主
             electLeader();
         }, 0, 5, TimeUnit.SECONDS);
-
     }
 
     private void updateServers() {
