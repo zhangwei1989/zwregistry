@@ -34,7 +34,7 @@ public class ServerHealth {
                 electLeader();
                 // 同步主节点注册数据
                 syncFromLeader();
-            }, 0, 5, TimeUnit.SECONDS);
+            }, 5, 5, TimeUnit.SECONDS);
         } catch (Exception e) {
             e.printStackTrace();
         }

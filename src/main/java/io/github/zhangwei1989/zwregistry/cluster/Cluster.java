@@ -38,8 +38,6 @@ public class Cluster {
     @Getter
     private List<Server> servers;
 
-    private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-
     public Cluster(ZwregistryConfigProperties registryConfigProperties) {
         this.registryConfigProperties = registryConfigProperties;
     }
