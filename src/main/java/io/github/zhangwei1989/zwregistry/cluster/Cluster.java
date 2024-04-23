@@ -49,23 +49,27 @@ public class Cluster {
     // 启动定时任务，定时探活配置中的注册中心所有实例
     // 定时确认是否需要选主，以及必要时进行选主
     public void init() {
-        // 首先初始化 MYSELF
-        String host = new InetUtils(new InetUtilsProperties()).findFirstNonLoopbackHostInfo().getIpAddress();
-        MYSELF = new Server("http://" + host + ":" + port, true, false, -1L);
+        try {
+            // 首先初始化 MYSELF
+            String host = new InetUtils(new InetUtilsProperties()).findFirstNonLoopbackHostInfo().getIpAddress();
+            MYSELF = new Server("http://" + host + ":" + port, true, false, -1L);
 
-        // 初始化 servers
-        servers = new ArrayList<>();
-        registryConfigProperties.getServerUrls().forEach(serverUrl -> {
-            if (serverUrl.contains("127.0.0.1") && !("127.0.0.1".equals(host))) {
-                serverUrl = serverUrl.replace("127.0.0.1", host);
-            }
-            Server server = new Server(serverUrl, false, false, -1L);
-            if (MYSELF.equals(server)) {
-                servers.add(MYSELF);
-            } else {
-                servers.add(server);
-            }
-        });
+            // 初始化 servers
+            servers = new ArrayList<>();
+            registryConfigProperties.getServerUrls().forEach(serverUrl -> {
+                if (serverUrl.contains("127.0.0.1") && !("127.0.0.1".equals(host))) {
+                    serverUrl = serverUrl.replace("127.0.0.1", host);
+                }
+                Server server = new Server(serverUrl, false, false, -1L);
+                if (MYSELF.equals(server)) {
+                    servers.add(MYSELF);
+                } else {
+                    servers.add(server);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             // 启动定时任务
@@ -151,6 +155,9 @@ public class Cluster {
         if (candidate != null) {
             log.debug("elected leader is {}", candidate);
             candidate.setLeader(true);
+        } else {
+            log.debug("candidate is null, choose self as leader");
+            self().setLeader(true);
         }
     }
 

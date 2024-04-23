@@ -33,12 +33,14 @@ public class ZwRegistryController {
 
     @RequestMapping("/reg")
     public InstanceMeta register(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> register service {} with instance {}", service, instance);
         return registryService.register(service, instance);
     }
 
     @RequestMapping("/unreg")
     public InstanceMeta unreg(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> unregister service {} with instance {}", service, instance);
         return registryService.unregister(service, instance);
     }
@@ -51,12 +53,14 @@ public class ZwRegistryController {
 
     @RequestMapping("/renew")
     public long renew(@RequestParam String service, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> renew service {} with instance {}", service, instance);
         return registryService.renew(instance, service);
     }
 
     @RequestMapping("/renews")
     public long renews(@RequestParam String services, @RequestBody InstanceMeta instance) {
+        checkLeader();
         log.info(" ======> renew service {} with instance {}", services, instance);
         return registryService.renew(instance, services.split(","));
     }
@@ -95,6 +99,13 @@ public class ZwRegistryController {
     public Snapshot snapshot() {
         log.info(" ======> current server snapshot, {}", registryService.snapshot());
         return registryService.snapshot();
+    }
+
+    private void checkLeader() {
+        if (!cluster.self().isLeader()) {
+            throw new RuntimeException("current server is not leader, current leader is : "
+            + cluster.leader());
+        }
     }
 
 }
