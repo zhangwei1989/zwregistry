@@ -1,5 +1,6 @@
 package io.github.zhangwei1989.zwregistry.service;
 
+import io.github.zhangwei1989.zwregistry.cluster.Snapshot;
 import io.github.zhangwei1989.zwregistry.model.InstanceMeta;
 
 import java.util.List;
@@ -26,5 +27,9 @@ public interface RegistryService {
     Long version(String service);
 
     Map<String, Long> versions(String... services);
+
+    Snapshot snapshot();
+
+    long restore(Snapshot snapshot);
 
 }

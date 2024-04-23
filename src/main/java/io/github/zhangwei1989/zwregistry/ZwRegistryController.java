@@ -2,6 +2,7 @@ package io.github.zhangwei1989.zwregistry;
 
 import io.github.zhangwei1989.zwregistry.cluster.Cluster;
 import io.github.zhangwei1989.zwregistry.cluster.Server;
+import io.github.zhangwei1989.zwregistry.cluster.Snapshot;
 import io.github.zhangwei1989.zwregistry.model.InstanceMeta;
 import io.github.zhangwei1989.zwregistry.service.RegistryService;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +83,18 @@ public class ZwRegistryController {
     public List<Server> cluster() {
         log.info(" ======> cluster check, {}", cluster.getServers());
         return cluster.getServers();
+    }
+
+    @RequestMapping("/leader")
+    public Server leader() {
+        log.info(" ======> leader, {}", cluster.leader());
+        return cluster.leader();
+    }
+
+    @RequestMapping("/snapshot")
+    public Snapshot snapshot() {
+        log.info(" ======> current server snapshot, {}", registryService.snapshot());
+        return registryService.snapshot();
     }
 
 }
