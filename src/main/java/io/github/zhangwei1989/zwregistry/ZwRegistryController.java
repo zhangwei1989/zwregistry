@@ -61,7 +61,7 @@ public class ZwRegistryController {
     @RequestMapping("/renews")
     public long renews(@RequestParam String services, @RequestBody InstanceMeta instance) {
         checkLeader();
-        log.info(" ======> renew service {} with instance {}", services, instance);
+        log.info(" ======> renews service {} with instance {}", services, instance);
         return registryService.renew(instance, services.split(","));
     }
 
