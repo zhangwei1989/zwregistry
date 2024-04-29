@@ -59,6 +59,8 @@ public class ZwRegistryService implements RegistryService {
 
         log.info(" ======> unregister instance {} ", instance.toUrl());
         instanceMetas.removeIf(instanceMeta -> instanceMeta.equals(instance));
+
+        log.info("instanceMetas : {}, instance : {}", instanceMetas, instance);
         instance.setStatus(false);
         renew(instance, service);
         VERSIONS.put(service, VERSION.incrementAndGet());

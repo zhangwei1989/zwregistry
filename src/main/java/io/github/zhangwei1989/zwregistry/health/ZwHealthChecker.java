@@ -31,6 +31,7 @@ public class ZwHealthChecker implements HealthChecker {
     public void start() {
         executor.scheduleWithFixedDelay(() -> {
             log.info(" ======> Health checker running...");
+            log.info(" ======> ZwRegistryService.TIMESTAMPS : {}", ZwRegistryService.TIMESTAMPS);
             long now = System.currentTimeMillis();
             ZwRegistryService.TIMESTAMPS.keySet().forEach(serviceAndInstance -> {
                 long last = ZwRegistryService.TIMESTAMPS.get(serviceAndInstance);
@@ -40,6 +41,7 @@ public class ZwHealthChecker implements HealthChecker {
                     String service = serviceAndInstance.substring(0, index);
                     String url = serviceAndInstance.substring(index + 1);
                     InstanceMeta instance = InstanceMeta.fromUrl(url);
+                    log.info(" ======> service is {}, instance is {}", service, instance);
                     registryService.unregister(service, instance);
                     ZwRegistryService.TIMESTAMPS.remove(serviceAndInstance);
                 }
