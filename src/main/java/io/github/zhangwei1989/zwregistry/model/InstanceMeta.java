@@ -19,7 +19,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = {"schema", "host", "port"})
+@EqualsAndHashCode(of = {"schema", "host", "port", "context"})
 public class InstanceMeta {
 
     private String schema;
